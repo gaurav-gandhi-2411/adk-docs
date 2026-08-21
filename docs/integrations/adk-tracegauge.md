@@ -116,14 +116,17 @@ adk-tracegauge check --baseline baseline.json --current current.json
 
 `adk-tracegauge check` exits `0` (no significant regression), `1` (regression: the cost
 increase is both statistically significant — the bootstrap confidence interval excludes
-zero — and clears a configurable practical-significance floor), or `3` (insufficient
+zero — and clears a configurable practical-significance floor), `3` (insufficient
 data — fewer than `--min-n`, default 30, priced invocations in either snapshot; a bootstrap
-CI is not statistically meaningful below that). Every run also prints its own **achieved
-statistical power** — the smallest cost increase the bootstrap test could reliably (80%
-power) have detected given that run's own observed variance and sample size — with an
-explicit warning whenever your configured significance floor is smaller than that
-achievable figure. See the project's own README ("Known limitations") for the full,
-honestly-reported detection-power numbers this estimate is validated against.
+CI is not statistically meaningful below that), or `4` (`status="pass"`, but this run's own
+observed variance/`n` could not reliably — 80% power — detect your configured floor, in
+EITHER mode: a real, distinguishable signal for a low-resolution "pass," not a hard
+failure). Every run also prints its own **achieved statistical power** — the smallest cost
+increase the bootstrap test could reliably (80% power) have detected given that run's own
+observed variance and sample size — with an explicit warning whenever your configured
+significance floor is smaller than that achievable figure. See the project's own README
+("Known limitations") for the full, honestly-reported detection-power numbers this estimate
+is validated against.
 
 ### Paired mode: the default, whenever a pairing key resolves
 
@@ -232,6 +235,17 @@ two-sample 3.18%). Both modes DO show a real, already-documented, generic small-
 percentile-bootstrap anti-conservatism (elevated FPR relative to nominal at `n≤50`,
 roughly equally in both modes) — see `docs/audit/FPR_ANOMALY.md` for the full
 investigation.
+
+**What this gate reliably catches, stated first:** at real measured hosted-model variance
+(`gemini-3.5-flash-lite`, a genuine 36-case evalset — see the package README's real-hosted-
+model section), the shipped paired default catches a **25% cost regression 98.00% of the
+time at `n=30`**, the shipped minimum eval-set size — the class of regression that actually
+happens in practice (a model swap, a new tool call added to every turn), not a constructed
+edge case. **No other cost-regression tool for ADK agents publishes a power number for its
+own gate at all** — stated once, plainly: this isn't a recurring comparison against a named
+competitor, just noting that a citable, measured number existing here is itself unusual for
+the category. The harder, more honest part is below: a fine-grained 10% drift needs a
+substantially larger eval set (roughly `n=100` at real measured variance) to catch reliably.
 
 **On power — no single figure, by design, and two different noise regimes, not one.** Paired
 mode structurally cancels case-to-case cost heterogeneity (that's the whole reason `--mode
